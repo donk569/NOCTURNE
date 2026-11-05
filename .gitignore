@@ -1,0 +1,48 @@
+# ============ Unity ============
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]serSettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Visual Studio / Rider 自动生成
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+
+# Unity3D 生成的 meta（仅忽略系统级）
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# 崩溃报告
+crashlytics-build.properties
+
+# ============ 本项目工作产物 ============
+/unity_v11/
+/unity_v*/
+/.workbuddy/
+/Cacheuv/
+
+# macOS
+.DS_Store
