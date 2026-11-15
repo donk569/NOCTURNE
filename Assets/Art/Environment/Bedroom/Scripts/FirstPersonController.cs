@@ -49,13 +49,15 @@ namespace NOCTURNE
         public float terminalVelocity = -28f;
 
         [Header("头部晃动")]
-        public float bobAmplitude = 0.028f;
+        [Tooltip("总开关。关闭后相机只有位置高度和鼠标俯仰，不会有任何晃动（本项目要求关闭）")]
+        public bool headBobEnabled = false;
+        public float bobAmplitude = 0f;
         public float bobFrequency = 8.6f;
         [Tooltip("静止时的呼吸幅度")]
-        public float breatheAmplitude = 0.006f;
+        public float breatheAmplitude = 0f;
         public float breatheFrequency = 1.15f;
         [Tooltip("镜头侧倾（走路时轻微左右摆）")]
-        public float swayRoll = 0.45f;
+        public float swayRoll = 0f;
 
         [Header("脚步")]
         [Tooltip("走多远算一步（米）")]
@@ -160,6 +162,30 @@ namespace NOCTURNE
             else if (Input.GetMouseButtonDown(0) && !_cursorLocked) LockCursor(true);
         }
 
+        /// <summary>
+        /// 外部接管相机后交还控制时用（例如开场躺卧 → 起床）。
+        /// 直接写入朝向与俯仰，避免起身瞬间视角被复位到默认值。
+        /// </summary>
+        public void SetLook(float yaw, float pitch)
+        {
+            _yaw = yaw;
+            _pitch = Mathf.Clamp(pitch, -pitchLimit, pitchLimit);
+            transform.rotation = Quaternion.Euler(0f, _yaw, 0f);
+            if (cameraRig != null)
+                cameraRig.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+        }
+
+        /// <summary>
+        /// 强制开关手电并同步内部状态。
+        /// 开场躺卧时必须调用 false，否则手电会跟着玩家照在床上。
+        /// </summary>
+        public void SetFlashlight(bool on)
+        {
+            _flashlightTarget = on ? 1f : 0f;
+            _flashlightCurrent = on ? 1f : 0f;
+            if (flashlight != null) flashlight.enabled = on;
+        }
+
         void LockCursor(bool locked)
         {
             _cursorLocked = locked;
@@ -255,6 +281,18 @@ namespace NOCTURNE
         {
             if (cameraRig == null) return;
 
+            // 只保留蹲下时的眼高过渡，位置偏移与旋转偏移一律为 0
+            float eye = Mathf.Lerp(cameraRig.localPosition.y, _targetEye, crouchSpeedLerp * Time.deltaTime);
+
+            if (!headBobEnabled)
+            {
+                _bobPhase = 0f;
+                _breathePhase = 0f;
+                cameraRig.localPosition = new Vector3(0f, eye, 0f);
+                cameraRig.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+                return;
+            }
+
             Vector3 horiz = new Vector3(_velocity.x, 0f, _velocity.z);
             float planarSpeed = horiz.magnitude;
             bool moving = _cc.isGrounded && planarSpeed > 0.15f;
@@ -279,7 +317,6 @@ namespace NOCTURNE
                 roll = 0f;
             }
 
-            float eye = Mathf.Lerp(cameraRig.localPosition.y, _targetEye, crouchSpeedLerp * Time.deltaTime);
             cameraRig.localPosition = new Vector3(offset.x, eye + offset.y, 0f);
             cameraRig.localRotation = Quaternion.Euler(_pitch, 0f, roll);
         }
@@ -369,7 +406,10 @@ namespace NOCTURNE
             {
                 style.normal.textColor = new Color(0.95f, 0.9f, 0.78f, 0.9f);
                 style.fontSize = 15;
-                GUI.Label(new Rect(cx - 120f, cy + 26f, 240f, 28f), "[E] " + CurrentTarget.Prompt, style);
+                // 绝大多数物体是 E 触发；猫碗走长按左键，自己给整句文案
+                var custom = CurrentTarget as IInteractPrompt;
+                string text = custom != null ? custom.FullPrompt : "[E] " + CurrentTarget.Prompt;
+                GUI.Label(new Rect(cx - 120f, cy + 26f, 240f, 28f), text, style);
             }
         }
     }

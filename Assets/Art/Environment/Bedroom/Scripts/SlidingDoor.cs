@@ -1,4 +1,5 @@
 using UnityEngine;
+using NOCTURNE.Cat;
 
 namespace NOCTURNE
 {
@@ -7,12 +8,19 @@ namespace NOCTURNE
     /// 因为 FBX 里一扇门的玻璃、边框、中梃、把手是各自独立的同级物体，
     /// 这里不重新挂父级（会被下次重新导入 FBX 冲掉），而是直接拖一组 Transform，
     /// 运行时记录初始位置再整体平移。
+    ///
+    /// 实现 <see cref="ICatDoor"/>，但 <c>catCanOpen</c> 默认 false：
+    /// 阳台门是"出房屋"的通道，猫不能从这里出去。
     /// </summary>
     [DisallowMultipleComponent]
-    public class SlidingDoor : MonoBehaviour, IInteractable
+    public class SlidingDoor : MonoBehaviour, IInteractable, ICatDoor
     {
         [Header("门扇（把这扇门的所有零件都拖进来）")]
         public Transform[] leaves;
+
+        [Header("猫咪")]
+        [Tooltip("允许猫自己拉开这扇门。阳台门/窗必须保持关闭")]
+        public bool catCanOpen = false;
 
         [Header("位移")]
         [Tooltip("打开时的位移（世界方向）。阳台两扇通常一个 -X 一个 +X")]
@@ -104,5 +112,19 @@ namespace NOCTURNE
             _t = open ? 1f : 0f;
             Apply(_t);
         }
+
+        // ---- ICatDoor（猫只读这几个，开关仍然走上面的 SetOpen） ----
+
+        public Transform DoorTransform { get { return transform; } }
+
+        /// <summary>逻辑开关状态（字段 isOpen 的只读出口，给猫用）。</summary>
+        public bool IsOpen { get { return isOpen; } }
+
+        public bool CatCanOpen { get { return catCanOpen && !locked; } }
+
+        public float OpenProgress { get { return _t; } }
+
+        /// <summary>开到位：逻辑上开着，而且平移已经到终点。猫只认这个。</summary>
+        public bool IsFullyOpen { get { return isOpen && _t >= 0.98f; } }
     }
 }

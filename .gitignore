@@ -46,3 +46,36 @@ crashlytics-build.properties
 
 # macOS
 .DS_Store
+
+# ============ Blender 源资产：只保留脚本，大二进制不入库 ============
+# Art/ 总计约 1.8GB（.blend 837M / .fbx 253M / 渲染图 273M），
+# 超过 GitHub 合理体积，且均可由 Art/**/*.py 重新生成。
+# 因此这里只放行 .py，其余一律忽略。
+/Art/**/*.blend
+/Art/**/*.blend1
+/Art/**/*.blend2
+/Art/**/*.fbx
+/Art/**/*.obj
+/Art/**/*.png
+/Art/**/*.jpg
+/Art/**/*.jpeg
+/Art/**/*.exr
+/Art/**/*.hdr
+/Art/**/*.tif
+/Art/**/*.tiff
+/Art/**/*.psd
+/Art/**/*.mp4
+/Art/**/*.glb
+/Art/**/*.gltf
+/Art/**/*.pyc
+/Art/**/__pycache__/
+/Art/**/obsolete_backup/
+/Art/Cat/work/*.json
+/Art/**/out/
+/generated-images/
+
+# ============ 本地诊断/备份产物 ============
+*.bak
+*.bak.*
+/backup_*/
+

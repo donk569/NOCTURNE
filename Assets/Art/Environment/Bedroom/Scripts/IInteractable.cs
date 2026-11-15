@@ -15,4 +15,14 @@ namespace NOCTURNE
         /// <summary>按下交互键时调用。</summary>
         void Interact();
     }
+
+    /// <summary>
+    /// 可选：这条提示不是用 E 触发的，需要整句自定义文案。
+    /// 猫碗就是这种 —— 它靠长按鼠标左键倒粮，E 在它身上不做任何事。
+    /// 不实现这个接口的物体继续显示「[E] Prompt」。
+    /// </summary>
+    public interface IInteractPrompt
+    {
+        string FullPrompt { get; }
+    }
 }

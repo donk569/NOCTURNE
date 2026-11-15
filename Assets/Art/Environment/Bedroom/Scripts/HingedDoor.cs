@@ -1,4 +1,5 @@
 using UnityEngine;
+using NOCTURNE.Cat;
 
 namespace NOCTURNE
 {
@@ -11,13 +12,21 @@ namespace NOCTURNE
     ///    开门时会绕那个点转，门板不会原地打转。
     /// knobs 这类跟着门走的小零件拖进 extras，会做同样的刚体运动。
     /// 用法：把 openDelta 调成合适的角度，调用 Toggle() 或 Interact()。
+    ///
+    /// 另外实现了 <see cref="ICatDoor"/>，让猫能把这扇门当成可通行的门洞。
+    /// 猫用的接口定义在 NOCTURNE.Cat 程序集里，这样引用方向是 Assembly-CSharp → NOCTURNE.Cat，
+    /// 不会和猫的程序集互相依赖。
     /// </summary>
     [DisallowMultipleComponent]
-    public class HingedDoor : MonoBehaviour, IInteractable
+    public class HingedDoor : MonoBehaviour, IInteractable, ICatDoor
     {
         [Header("角度")]
         [Tooltip("相对初始姿态打开多少度。正负决定往哪边开")]
         public float openDelta = 65f;
+
+        [Header("猫咪")]
+        [Tooltip("允许猫自己推开这扇门。室内门勾上；柜门、装饰门取消")]
+        public bool catCanOpen = true;
 
         [Header("合页")]
         [Tooltip("从门板原点指向合页的世界偏移。原点在合页上就留零")]
@@ -49,18 +58,32 @@ namespace NOCTURNE
         float _current;
         float _target;
         Vector3 _basePos;
+        Quaternion _baseRot;               // 关闭姿态的完整朝向（四元数，避免欧拉角歧义）
         Vector3 _hinge;                    // 世界坐标合页点
         Vector3[] _extraPos;
         Quaternion[] _extraRot;
+        bool _inited;
 
-        void Awake()
+        /// <summary>
+        /// 记录关闭基准。Awake 会调用；编辑器里没走 Awake 时由 SetOpen/SnapTo 兜底调用，
+        /// 否则 _baseRot 还是默认 identity，一调 SnapTo 就会把带 270° X 旋转的门板转平。
+        /// </summary>
+        void EnsureInit()
         {
+            if (_inited) return;
+            _inited = true;
             _baseY = transform.localEulerAngles.y;
             _basePos = transform.position;
+            _baseRot = transform.rotation;
             _hinge = _basePos + pivotOffset;
             CacheExtras();
             _current = _baseY;
             _target = _baseY + (isOpen ? openDelta : 0f);
+        }
+
+        void Awake()
+        {
+            EnsureInit();
             Apply(_current);
         }
 
@@ -86,12 +109,12 @@ namespace NOCTURNE
 
         void Apply(float y)
         {
-            var e = transform.localEulerAngles;
-            e.y = y;
-            transform.localEulerAngles = e;
-
+            // 不写 localEulerAngles：门板本身可能带 270° 的 X 旋转，
+            // 读回欧拉角再改 Y 会产生歧义（关到头时漂移几度，留下缝隙）。
+            // 这里统一用四元数：关闭姿态 = _baseRot，开门 = 绕世界 Y 转 delta。
             float delta = Mathf.DeltaAngle(_baseY, y);
             Quaternion q = Quaternion.AngleAxis(delta, Vector3.up);
+            transform.rotation = q * _baseRot;
 
             // 门板原点绕合页转：O' = hinge + R * (basePos - hinge)
             if (pivotOffset.sqrMagnitude > 1e-8f)
@@ -112,7 +135,7 @@ namespace NOCTURNE
         }
 
         // ---- IInteractable ----
-        public string Prompt => (isOpen ? "关上" : "打开") + " " + displayName;
+        public string Prompt => (isOpen ? "关上" : "打开") + displayName;
         public bool CanInteract => !locked;
 
         public void Interact()
@@ -123,6 +146,7 @@ namespace NOCTURNE
 
         public void SetOpen(bool open)
         {
+            EnsureInit();
             isOpen = open;
             _target = _baseY + (open ? openDelta : 0f);
             if (audioSource != null)
@@ -135,9 +159,40 @@ namespace NOCTURNE
         /// <summary>直接设成打开角度，跳过动画（初始化场景用）</summary>
         public void SnapTo(bool open)
         {
+            EnsureInit();
             isOpen = open;
             _current = _target = _baseY + (open ? openDelta : 0f);
             Apply(_current);
+        }
+
+        // ---- ICatDoor（猫只读这几个，开关仍然走上面的 SetOpen） ----
+
+        public Transform DoorTransform { get { return transform; } }
+
+        /// <summary>逻辑开关状态（字段 isOpen 的只读出口，给猫用）。</summary>
+        public bool IsOpen { get { return isOpen; } }
+
+        /// <summary>上锁的门猫也打不开。</summary>
+        public bool CatCanOpen { get { return catCanOpen && !locked; } }
+
+        public float OpenProgress
+        {
+            get
+            {
+                if (!_inited) return isOpen ? 1f : 0f;
+                float span = Mathf.Max(0.01f, Mathf.Abs(openDelta));
+                return Mathf.Clamp01(Mathf.Abs(Mathf.DeltaAngle(_baseY, _current)) / span);
+            }
+        }
+
+        /// <summary>开到位：逻辑上是开着的，而且插值已经停下来。猫只认这个。</summary>
+        public bool IsFullyOpen
+        {
+            get
+            {
+                if (!isOpen || !_inited) return false;
+                return Mathf.Abs(Mathf.DeltaAngle(_current, _target)) < 0.75f;
+            }
         }
 
         void OnDrawGizmosSelected()
