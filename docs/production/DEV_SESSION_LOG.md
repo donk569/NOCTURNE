@@ -109,7 +109,7 @@ Assembly-CSharp        Opening/ Feeding/ UI/   剩余（A20 收尾时清零）
 
 | 任务 | 提交 | 内容 | 验证证据 |
 |---|---|---|---|
-| A13 | `df76978` | `CatNavGrid` → `Nav/NavGrid`（GUID 不变），新建 `NOCTURNE.Nav` 程序集；新增 `IDoorPassage` 接口解耦"门的语义" | 编译 0 错误；`MISSING=0`；完整自测 `DONE`、0 警告 0 错误；Play 6s/597 帧烟测 |
+| A13 | `d5090da` | `CatNavGrid` → `Nav/NavGrid`（GUID 不变），新建 `NOCTURNE.Nav` 程序集；新增 `IDoorPassage` 接口解耦"门的语义" | 编译 0 错误；`MISSING=0`；完整自测 `DONE`、0 警告 0 错误；Play 6s/597 帧烟测 |
 
 ### 关键设计决策：`CatDoorway` 用接口解耦，而不是搬进 Nav 域
 
