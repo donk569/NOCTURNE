@@ -798,7 +798,7 @@ GameObject:
   - component: {fileID: 19408124}
   - component: {fileID: 19408123}
   m_Layer: 0
-  m_Name: Drawer_Mid
+  m_Name: Drawer_Desk_Mid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5987,7 +5987,7 @@ GameObject:
   - component: {fileID: 349575842}
   - component: {fileID: 349575841}
   m_Layer: 0
-  m_Name: Drawer_Top
+  m_Name: Drawer_Nightstand_Top
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7429,7 +7429,7 @@ GameObject:
   - component: {fileID: 424245238}
   - component: {fileID: 424245237}
   m_Layer: 0
-  m_Name: Drawer_Bottom
+  m_Name: Drawer_Desk_Bottom
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -32078,7 +32078,7 @@ GameObject:
   - component: {fileID: 1828280136}
   - component: {fileID: 1828280135}
   m_Layer: 0
-  m_Name: Drawer_Top
+  m_Name: Drawer_Desk_Top
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -42831,7 +42831,7 @@ GameObject:
   - component: {fileID: 2119233853}
   - component: {fileID: 2119233852}
   m_Layer: 0
-  m_Name: Drawer_Bottom
+  m_Name: Drawer_Nightstand_Bottom
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
