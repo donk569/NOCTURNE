@@ -102,3 +102,49 @@ Assembly-CSharp        Opening/ Feeding/ UI/   剩余（A20 收尾时清零）
 **A13：`Nav` 程序集 —— `CatNavGrid` → `Nav/NavGrid`**
 - 注意：`CatNavGrid` 被 `CatAgent` 用 `List<CatDoorway>` 参数调用；改名时 `CatNavGrid.cs` 与 `CatDoorway.cs` 要一起处理（`CatDoorway` 是纯 C# 类，被 `CatNavGrid.Build` 与 `CatAgent` 共同引用）。
 - 猫域 `NOCTURNE.Cat.asmdef` 目前 `references: []`，新建 `NOCTURNE.Nav` 后要给它加引用，否则 `CatAgent` 找不到 `NavGrid`。
+
+---
+
+## 2026-11-15 续 2（A13）
+
+| 任务 | 提交 | 内容 | 验证证据 |
+|---|---|---|---|
+| A13 | `df76978` | `CatNavGrid` → `Nav/NavGrid`（GUID 不变），新建 `NOCTURNE.Nav` 程序集；新增 `IDoorPassage` 接口解耦"门的语义" | 编译 0 错误；`MISSING=0`；完整自测 `DONE`、0 警告 0 错误；Play 6s/597 帧烟测 |
+
+### 关键设计决策：`CatDoorway` 用接口解耦，而不是搬进 Nav 域
+
+采用方案 **(b)**：在 `Nav` 域定义 `IDoorPassage`（只有 `Passable` + `DoorTransform` 两个成员），`CatDoorway` 留在 `Cat` 域并实现它，`NavGrid.Build` 只接受 `IReadOnlyList<IDoorPassage>`。
+
+好处：
+- `Nav` 不再认识"门"的语义（谁能开、合页怎么转、猫被门板扫到怎么躲），这些留在实体域；
+- `CatDoorway` 的 `List<CatDoorway>` 通过 `IReadOnlyList` 协变直接传入，`CatAgent` 调用点几乎没改；
+- 未来加"鬼能穿的门""只 Warning 不阻挡的门"时，只要实现这个两成员接口，`NavGrid` 一行都不用动。
+
+### 主理人拍板：`NOCTURNE.Nav` 不引用 `Core`
+
+技术负责人给出三个选项，我选 **① 删掉死引用**：
+- 证据：`grep` 全 `Assets/Game/Nav/*.cs` 无任何 `using NOCTURNE.Core` / `Log.` / `GameState` / `ControlLock`；
+- 依据：ARCHITECTURE §5.2 禁令 2 明确「Nav 不许引用任何 `NOCTURNE.*`，连 Core 都不要」；
+- 保留它只会让"Nav 是纯算法域"这条边界变模糊。等 **C03 `NavService`** 真要写日志时再加，届时是一次显式决策。
+
+最终 `NOCTURNE.Nav` 的 `references: []` —— 目前全项目唯一零依赖的运行时程序集。
+
+### 当前程序集状态
+
+```
+NOCTURNE.Core          references: []
+NOCTURNE.Nav           references: []              ← A13 新增，零依赖
+NOCTURNE.Interaction   references: [Core]
+NOCTURNE.Player        references: [Core, Interaction]
+NOCTURNE.World         references: [Core, Interaction, Player, Cat]
+NOCTURNE.Cat           references: [Nav]            ← A13 更新
+Assembly-CSharp        剩余 Opening / Feeding / UI
+```
+
+### 下次开工的入口
+
+**A14：`AudioService`（分组 + 池）**
+- 位置：`Assets/Game/Core/Audio/`（属 Core，因为 `Log` 与它同域且被所有域调用）
+- 要点：`Play(SfxId)` / `PlayAt(Transform, SfxId)` 两个入口；5 个分组（Master/SFX/Ambience/Voice/UI）；池 24 个 `AudioSource`，超出抢最远；常驻 `DontDestroyOnLoad`
+- 注意：Core 要新加 `Unity.TextMeshPro`？**不需要**，但 Core 需要 `UnityEngine.AudioModule`（默认就在引擎内，不用显式引用）
+- 技术负责人的提醒：**EditMode 测试一直没跑过**（`CatBrainTests` 在 `NOCTURNE.Cat.Tests` 里），建议 A18/A19 统一跑一次；可复用的 Play 验证脚本：`.workbuddy/tools/a13_playtest.py`
