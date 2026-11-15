@@ -49,6 +49,17 @@ namespace NOCTURNE.DebugTools
         {
             static readonly StringBuilder _buf = new StringBuilder();
 
+            /// <summary>
+            /// 按名字递归查找（不含层级路径）。场景层级被重组时，自测不该跟着失效。
+            /// </summary>
+            static GameObject FindDeep(string name)
+            {
+                var all = UnityEngine.Object.FindObjectsOfType<Transform>(true);
+                for (int i = 0; i < all.Length; i++)
+                    if (all[i].name == name) return all[i].gameObject;
+                return null;
+            }
+
             // Play 里 MCP 会掉线，Console 读不到，所以自己挂日志钩子把警告/错误抄进文件
             static int _warnCount;
             static int _errCount;
@@ -103,10 +114,10 @@ namespace NOCTURNE.DebugTools
                 // 期间统计"猫身上任何音源是否响过"：黑屏阶段必须完全静音。
                 // 只统计黑屏（BlackOverlay alpha > 0.5）那一段 —— 睁眼之后猫叫是应该的。
                 var catAudio = cat.GetComponentsInChildren<AudioSource>(true);
-                var voiceGo = GameObject.Find("CatFeeding/CatVoice");
+                var voiceGo = FindDeep("CatVoice");
                 var voiceSrc = voiceGo != null ? voiceGo.GetComponent<AudioSource>() : null;
                 var openingSeq = UnityEngine.Object.FindObjectOfType(System.Type.GetType("NOCTURNE.Opening.OpeningSequenceController, Assembly-CSharp")) as MonoBehaviour;
-                var overlayGo = GameObject.Find("OpeningCanvas/BlackOverlay");
+                var overlayGo = FindDeep("BlackOverlay");
                 var overlayImg = overlayGo != null ? overlayGo.GetComponent<UnityEngine.UI.Image>() : null;
 
                 float catAudioSeconds = 0f;
