@@ -1,5 +1,6 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
+using NOCTURNE.Core.Flow;
 
 namespace NOCTURNE.Feeding
 {
@@ -118,7 +119,7 @@ namespace NOCTURNE.Feeding
         void OnDisable()
         {
             if (Held == this) Held = null;
-            FeedingInteractionLock.Unlock(this);
+            ControlLock.Release(ControlLock.Reason.Pouring, this);
         }
 
         void OnDestroy()
@@ -132,7 +133,7 @@ namespace NOCTURNE.Feeding
 
             // 放回不再是"任意位置按 E 就生效"的全局监听：
             // 必须真的站在茶几的指定放置区域旁边，且准星没有选中别的可交互物。
-            if (FeedingInteractionLock.IsLocked) return;
+            if (ControlLock.Blocks(ControlLock.Reason.Pouring)) return;
             if (!PlayerInRange(putBackRange)) return;
             if (!Input.GetKeyDown(dropKey)) return;
 
@@ -158,7 +159,7 @@ namespace NOCTURNE.Feeding
         void OnGUI()
         {
             if (_state != CatFoodBagState.Held || _returning) return;
-            if (FeedingInteractionLock.IsLocked) return;
+            if (ControlLock.Blocks(ControlLock.Reason.Pouring)) return;
             if (Cursor.lockState != CursorLockMode.Locked) return;
             if (!PlayerInRange(putBackRange)) return;
             if (_fpc == null) _fpc = FindObjectOfType<FirstPersonController>();
@@ -332,7 +333,7 @@ namespace NOCTURNE.Feeding
             _tiltTarget = 0f;
             _pouringBowl = null;
             SetState(CatFoodBagState.Held);
-            FeedingInteractionLock.Unlock(this);
+            ControlLock.Release(ControlLock.Reason.Pouring, this);
         }
 
         /// <summary>长按达标：此时袋子通常已经倾到位，直接开始撒粮。</summary>
@@ -346,7 +347,7 @@ namespace NOCTURNE.Feeding
         IEnumerator CommitRoutine(CatFoodBowl bowl)
         {
             _pouringBowl = bowl;
-            FeedingInteractionLock.Lock(this);
+            ControlLock.Acquire(ControlLock.Reason.Pouring, this);
 
             _tiltTarget = tiltAngle;
 
@@ -374,7 +375,7 @@ namespace NOCTURNE.Feeding
             _pouringBowl = null;
             SetState(CatFoodBagState.Held);
 
-            FeedingInteractionLock.Unlock(this);
+            ControlLock.Release(ControlLock.Reason.Pouring, this);
             _pourRoutine = null;
         }
 
@@ -396,7 +397,7 @@ namespace NOCTURNE.Feeding
             _pouringBowl = bowl;
 
             // 倒粮期间屏蔽其他交互（E 不响应门/椅子），移动保持可用
-            FeedingInteractionLock.Lock(this);
+            ControlLock.Acquire(ControlLock.Reason.Pouring, this);
 
             _tiltTarget = tiltAngle;
             yield return new WaitForSeconds(tiltTime);
@@ -422,51 +423,13 @@ namespace NOCTURNE.Feeding
             _pouringBowl = null;
             SetState(CatFoodBagState.Held);
 
-            FeedingInteractionLock.Unlock(this);
+            ControlLock.Release(ControlLock.Reason.Pouring, this);
             _pourRoutine = null;
         }
 
         void SetState(CatFoodBagState next)
         {
             _state = next;
-        }
-    }
-
-    /// <summary>
-    /// 交互临时锁：倒粮这类"短暂过场"期间把 FPC 的交互距离压成 0，
-    /// 准星不再选中任何东西，E 不会误开旁边的门/椅子。移动与视角完全不受影响。
-    /// </summary>
-    public static class FeedingInteractionLock
-    {
-        static object _owner;
-        static FirstPersonController _fpc;
-        static float _savedDistance;
-
-        public static bool IsLocked { get { return _owner != null; } }
-
-        public static void Lock(object owner)
-        {
-            if (_owner != null) return;
-
-            _owner = owner;
-            _fpc = Object.FindObjectOfType<FirstPersonController>();
-            if (_fpc != null)
-            {
-                _savedDistance = _fpc.interactDistance;
-                _fpc.interactDistance = 0f;
-            }
-        }
-
-        public static void Unlock(object owner)
-        {
-            if (_owner != owner) return;
-
-            _owner = null;
-            if (_fpc != null)
-            {
-                _fpc.interactDistance = _savedDistance;
-                _fpc = null;
-            }
         }
     }
 }

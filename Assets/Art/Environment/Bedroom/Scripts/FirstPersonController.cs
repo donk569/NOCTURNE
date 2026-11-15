@@ -1,4 +1,5 @@
 using UnityEngine;
+using NOCTURNE.Core.Flow;
 
 namespace NOCTURNE
 {
@@ -369,6 +370,10 @@ namespace NOCTURNE
         void HandleInteraction()
         {
             CurrentTarget = null;
+
+            // 有任何系统登记了"控制权"（倒粮 / 手持 / 过场…）时，准星不再选中任何东西。
+            // 这里查表而不是让别人改 interactDistance —— 后者一旦漏还原就会永久坏掉。
+            if (ControlLock.BlocksAny) return;
 
             if (cameraRig != null)
             {
