@@ -64,3 +64,41 @@ A03（删相机）、A04（抽屉改名）都改了 `SampleScene`。命名改动
    - 注意：`CatFoodBagInteractable` 会读 `_fpc.CurrentTarget`，拆分后必须保留 `FPC.CurrentTarget` 作为转发属性，否则编译断。
 2. 跑一次自测确认基线仍绿，再动手。
 3. 若 Q-01 选了方案②，把 A09 剩余部分插在 A11 之前做。
+
+---
+
+## 2026-11-15 续（A10–A12）
+
+| 任务 | 提交 | 内容 | 验证证据 |
+|---|---|---|---|
+| A10 | `refactor(player)` | 从 FPC 拆出 `PlayerInteractor`（射线/CurrentTarget/提示/交互键），FPC 保留转发属性 | 编译 0 错误；自测 E/F/F2/F3/G/G2/G3/H 段全通过；`interactDistance/interactMask/interactKey` 场景值经核实均为默认后才删除 |
+| A11 | `refactor(interaction)` | 建 `NOCTURNE.Interaction` 程序集，接口迁出并改命名空间，8 个引用者补 using | 编译 0 错误；场景 1715 字段 `MISSING=0`；12 个交互物组件全在；自测全绿 |
+| A12 | `refactor` | 建 `NOCTURNE.Player` / `NOCTURNE.World`，10 个脚本迁出 `Assets/Art`，旧目录删除 | 编译 0 错误；`MISSING=0`；26 个脚本全部正常挂载；自测全绿 |
+
+### 当前程序集结构
+
+```
+NOCTURNE.Core          Core/            Log, GameState(9态), GameStateManager, ControlLock
+NOCTURNE.Interaction   Interaction/     IInteractable, IInteractPrompt
+NOCTURNE.Player        Player/          FirstPersonController, PlayerInteractor, PlayerSittingController
+NOCTURNE.World         World/Props/     Chair/Drawer/HingedDoor/Mirror/SlidingDoor/TriggerVolume
+NOCTURNE.Cat           Cat/Scripts/     CatAgent, CatBrain, CatNavGrid, CatOpeningController ...
+Assembly-CSharp        Opening/ Feeding/ UI/   剩余（A20 收尾时清零）
+```
+
+### 本轮新增踩坑
+
+- **`ChairHoldUI` 依赖 TMPro**：放进 `World` 会逼 World 引用 `Unity.TextMeshPro`，破坏"World 不含 UI"的分层。已移到 `Game/UI/`（暂归 Assembly-CSharp），见 Q-04。
+- **跨程序集依赖要按矩阵来**：`ChairInteractable`(World) 引用 `PlayerSittingController`(Player) 是矩阵允许的 **World → Player** 单向依赖；反过来不行。加 asmdef 前必须先查依赖方向，否则会出现循环引用报错。
+- **`execute_code` 在一帧内同步执行**：想验证 `Update` 驱动的逻辑（如 `PlayerInteractor.Scan`）不能靠反射调用 + 立即读结果，必须让它真的跑过一帧。这类验证改用"自测脚本内断言"更可靠。
+
+### 新的待确认问题
+
+**Q-04 `ChairHoldUI` 的归属**
+它同时依赖 `ChairInteractable`(World)、`PlayerSittingController`(Player) 和 TMPro。按架构矩阵 `UI` 只能引用 Core+Interaction，所以现在暂放 `Game/UI/` 且不建 asmdef（归 Assembly-CSharp）。等 Phase B 做 HUD 时，若要建 `NOCTURNE.UI`，需要先把 `ChairHoldUI` 改成订阅事件（不再直接引用 Chair/Sitting），否则建不出来。
+
+### 下次开工的入口
+
+**A13：`Nav` 程序集 —— `CatNavGrid` → `Nav/NavGrid`**
+- 注意：`CatNavGrid` 被 `CatAgent` 用 `List<CatDoorway>` 参数调用；改名时 `CatNavGrid.cs` 与 `CatDoorway.cs` 要一起处理（`CatDoorway` 是纯 C# 类，被 `CatNavGrid.Build` 与 `CatAgent` 共同引用）。
+- 猫域 `NOCTURNE.Cat.asmdef` 目前 `references: []`，新建 `NOCTURNE.Nav` 后要给它加引用，否则 `CatAgent` 找不到 `NavGrid`。
