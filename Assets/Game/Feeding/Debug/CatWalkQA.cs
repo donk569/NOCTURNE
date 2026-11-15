@@ -1,3 +1,4 @@
+﻿#if UNITY_EDITOR // 调试/自测代码：仅编辑器构建，不进入玩家包
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -273,3 +274,4 @@ namespace NOCTURNE.DebugTools
         }
     }
 }
+#endif
