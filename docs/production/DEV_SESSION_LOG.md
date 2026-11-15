@@ -148,3 +148,45 @@ Assembly-CSharp        剩余 Opening / Feeding / UI
 - 要点：`Play(SfxId)` / `PlayAt(Transform, SfxId)` 两个入口；5 个分组（Master/SFX/Ambience/Voice/UI）；池 24 个 `AudioSource`，超出抢最远；常驻 `DontDestroyOnLoad`
 - 注意：Core 要新加 `Unity.TextMeshPro`？**不需要**，但 Core 需要 `UnityEngine.AudioModule`（默认就在引擎内，不用显式引用）
 - 技术负责人的提醒：**EditMode 测试一直没跑过**（`CatBrainTests` 在 `NOCTURNE.Cat.Tests` 里），建议 A18/A19 统一跑一次；可复用的 Play 验证脚本：`.workbuddy/tools/a13_playtest.py`
+
+---
+
+## 2026-11-15 续 3：场景层级整理（用户要求"层级有条理"）
+
+提交 `704740e` `chore(scene): 按职责整理场景根层级`
+
+### 整理前：16 个根对象平铺
+
+```
+NOCTURNE / CAT_Nocturne / OpeningCanvas / OpeningFX / LyingAnchor /
+OpeningAudio / OpeningSystems / MirrorTrigger / Chair_InsidePosition /
+Chair_OutsidePosition / SitAnchor / ChairHoldCanvas /
+Cat_Bed_OpeningPosition / Cat_FloorExitPosition / CatFoodBowl / CatFeeding
+```
+
+### 整理后：6 个根
+
+```
+NOCTURNE          (children 5)  Architecture / Furniture / Props / Lights / Player
+CAT_Nocturne      (children 4)
+_Systems          (children 4)  OpeningSystems / CatFeeding / CatFoodBowl / MirrorTrigger
+_Anchors          (children 6)  LyingAnchor / SitAnchor / Chair_InsidePosition /
+                                Chair_OutsidePosition / Cat_Bed_OpeningPosition / Cat_FloorExitPosition
+_UI               (children 2)  OpeningCanvas / ChairHoldCanvas
+_FX               (children 2)  OpeningAudio / OpeningFX
+```
+
+### 三条规则（后续新增对象照此放）
+
+1. **有逻辑的放 `_Systems`**：控制器、流程机、触发区。
+2. **空物体锚点放 `_Anchors`**：只提供坐标/朝向的 marker，不挂任何逻辑。
+3. **`NOCTURNE` 与 `CAT_Nocturne` 永远在根**：它们分别承载 Player 与猫，重父化会改变 `CharacterController`/`Animator` 的世界变换语义，收益不值得这个风险。
+
+### 移动的安全做法
+
+- 一律 `SetParent(parent, worldPositionStays: true)`，世界坐标与缩放不变；
+- 移动前先 `grep GameObject.Find("路径")` —— 自测里有 `"CatFeeding/CatVoice"` 和 `"OpeningCanvas/BlackOverlay"` 两处路径查找，已改成 `FindDeep(按名字递归)`，这样**以后重组层级不会再打断自测**。
+
+### 验证
+
+`MISSING=0`（1715 字段）；完整自测 51 行 `DONE`、0 警告 0 错误；`A0 黑屏 0 猫叫` + `A0b 睁眼后猫叫 1.85s`（证明 `FindDeep` 生效）；重复保存场景无差异（`git status` 干净）。
