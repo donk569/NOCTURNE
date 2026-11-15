@@ -1309,6 +1309,7 @@ GameObject:
   - component: {fileID: 28840709}
   - component: {fileID: 28840712}
   - component: {fileID: 28840713}
+  - component: {fileID: 28840714}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1361,12 +1362,8 @@ MonoBehaviour:
   flashlightRange: 9
   flashlightAngle: 46
   flashlightIntensity: 2.1
-  interactDistance: 2.2
-  interactMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  interactKey: 101
   flashlightKey: 102
+  interactor: {fileID: 28840714}
 --- !u!143 &28840710
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1467,6 +1464,25 @@ MonoBehaviour:
   sitColliderCenterY: 0.42
   standUpKey: 101
   standEyeHeight: 1.07
+--- !u!114 &28840714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 28840708}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e4a494f73758ef418d6d523249089b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fpc: {fileID: 28840709}
+  interactDistance: 2.2
+  interactMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  interactKey: 101
+  drawCrosshair: 1
 --- !u!21 &39657570
 Material:
   serializedVersion: 8

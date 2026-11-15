@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using NOCTURNE.Core.Flow;
 
 namespace NOCTURNE
@@ -75,13 +75,19 @@ namespace NOCTURNE
         public float flashlightIntensity = 2.1f;
 
         [Header("交互")]
-        public float interactDistance = 2.2f;
-        public LayerMask interactMask = ~0;
-        public KeyCode interactKey = KeyCode.E;
         public KeyCode flashlightKey = KeyCode.F;
 
-        /// <summary>当前准星指向的可交互物，UI 可以读它显示提示。</summary>
-        public IInteractable CurrentTarget { get; private set; }
+        [Tooltip("交互执行者。留空则自动取本物体上的 PlayerInteractor")]
+        public PlayerInteractor interactor;
+
+        /// <summary>当前准星指向的可交互物（转发自 PlayerInteractor）。UI 读它显示提示。</summary>
+        public IInteractable CurrentTarget
+        {
+            get { return interactor != null ? interactor.CurrentTarget : null; }
+        }
+
+        /// <summary>光标是否已锁定。交互组件据此判断是否响应输入。</summary>
+        public bool CursorLocked { get { return _cursorLocked; } }
 
         /// <summary>每次落步触发一次，参数是当时的水平速度。接音效/震动/事件用。</summary>
         public event System.Action<float> Footstep;
@@ -97,6 +103,7 @@ namespace NOCTURNE
         void Awake()
         {
             _cc = GetComponent<CharacterController>();
+            if (interactor == null) interactor = GetComponent<PlayerInteractor>();
             if (cameraRig == null && Camera.main != null) cameraRig = Camera.main.transform;
 
             _cc.height = standHeight;
@@ -137,7 +144,6 @@ namespace NOCTURNE
             }
             HandleCrouch();
             HandleFlashlight();
-            HandleInteraction();
             HeadBob();
         }
 
@@ -365,57 +371,5 @@ namespace NOCTURNE
                 flashlight.enabled = false;
         }
 
-        // ---------------------------------------------------------------- 交互
-
-        void HandleInteraction()
-        {
-            CurrentTarget = null;
-
-            // 有任何系统登记了"控制权"（倒粮 / 手持 / 过场…）时，准星不再选中任何东西。
-            // 这里查表而不是让别人改 interactDistance —— 后者一旦漏还原就会永久坏掉。
-            if (ControlLock.BlocksAny) return;
-
-            if (cameraRig != null)
-            {
-                Ray ray = new Ray(cameraRig.position, cameraRig.forward);
-                if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, interactMask,
-                        QueryTriggerInteraction.Collide))
-                {
-                    var target = hit.collider.GetComponentInParent<IInteractable>();
-                    if (target != null && target.CanInteract) CurrentTarget = target;
-                }
-            }
-
-            if (CurrentTarget != null && Input.GetKeyDown(interactKey))
-                CurrentTarget.Interact();
-        }
-
-        // ---------------------------------------------------------------- 调试 HUD
-
-        void OnGUI()
-        {
-            if (!_cursorLocked) return;
-
-            var style = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 13,
-                alignment = TextAnchor.MiddleCenter
-            };
-            style.normal.textColor = new Color(0.85f, 0.85f, 0.8f, 0.55f);
-
-            // 准星
-            float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
-            GUI.Label(new Rect(cx - 6f, cy - 12f, 12f, 24f), "+", style);
-
-            if (CurrentTarget != null)
-            {
-                style.normal.textColor = new Color(0.95f, 0.9f, 0.78f, 0.9f);
-                style.fontSize = 15;
-                // 绝大多数物体是 E 触发；猫碗走长按左键，自己给整句文案
-                var custom = CurrentTarget as IInteractPrompt;
-                string text = custom != null ? custom.FullPrompt : "[E] " + CurrentTarget.Prompt;
-                GUI.Label(new Rect(cx - 120f, cy + 26f, 240f, 28f), text, style);
-            }
-        }
     }
 }
