@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using NOCTURNE.Cat;
 using NOCTURNE.Interaction;
+using NOCTURNE.Core.Audio;
 
 namespace NOCTURNE
 {
@@ -150,11 +151,7 @@ namespace NOCTURNE
             EnsureInit();
             isOpen = open;
             _target = _baseY + (open ? openDelta : 0f);
-            if (audioSource != null)
-            {
-                var clip = open ? openClip : closeClip;
-                if (clip != null) audioSource.PlayOneShot(clip);
-            }
+            AudioService.PlayAt(transform, open ? SfxId.DoorOpen : SfxId.DoorClose, SoundGroup.Sfx, 1f);
         }
 
         /// <summary>直接设成打开角度，跳过动画（初始化场景用）</summary>

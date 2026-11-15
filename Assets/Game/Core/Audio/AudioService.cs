@@ -71,6 +71,10 @@ namespace NOCTURNE.Core.Audio
             transform.SetParent(null, false);
             if (Application.isPlaying) DontDestroyOnLoad(gameObject);
             BuildPool();
+
+            // 把 Catalog 里的 clip 注册进来。没有 Catalog 时静默跳过（A15 之前的状态）。
+            var catalog = AudioCatalog.Load();
+            if (catalog != null) catalog.RegisterAll();
         }
 
         void OnDestroy()
@@ -162,6 +166,12 @@ namespace NOCTURNE.Core.Audio
             PlayInternal(id, SoundGroup.Sfx, follow, follow != null ? follow.position : Vector3.zero, volume, true);
         }
 
+        /// <summary>带音高变化的 3D 播放（铃铛随机颤音、门轴不同松紧）。</summary>
+        public static void PlayAt(Transform follow, SfxId id, SoundGroup group, float volume, float pitch)
+        {
+            PlayInternal(id, group, follow, follow != null ? follow.position : Vector3.zero, volume, true, pitch);
+        }
+
         /// <summary>播放 3D 音效，固定在某个世界坐标（一次性撞击声）。</summary>
         public static void PlayAt(Vector3 position, SfxId id, float volume = 1f)
         {
@@ -182,6 +192,12 @@ namespace NOCTURNE.Core.Audio
 
         static void PlayInternal(SfxId id, SoundGroup group, Transform follow,
                                  Vector3 position, float volume, bool spatial)
+        {
+            PlayInternal(id, group, follow, position, volume, spatial, 1f);
+        }
+
+        static void PlayInternal(SfxId id, SoundGroup group, Transform follow,
+                                 Vector3 position, float volume, bool spatial, float pitch)
         {
             if (id == SfxId.None) return;
 
@@ -216,6 +232,7 @@ namespace NOCTURNE.Core.Audio
             v.baseVolume = Mathf.Clamp01(volume);
             svc._voices[slot] = v;
 
+            src.pitch = Mathf.Clamp(pitch, 0.1f, 3f);
             src.volume = svc.ResolveVolume(v);
             src.Play();
         }

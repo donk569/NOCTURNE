@@ -1,4 +1,5 @@
-using UnityEngine;
+﻿using UnityEngine;
+using NOCTURNE.Core.Audio;
 
 namespace NOCTURNE.Cat
 {
@@ -138,9 +139,9 @@ namespace NOCTURNE.Cat
             AudioClip clip = clips[Random.Range(0, clips.Length)];
             if (clip == null) return;
 
-            source.pitch = Random.Range(pitchJitter.x, pitchJitter.y);
+            float pitch = Random.Range(pitchJitter.x, pitchJitter.y);
             float v = volume * Mathf.Lerp(1f, runVolumeBoost, Mathf.Clamp01(runAmount));
-            source.PlayOneShot(clip, Mathf.Clamp01(v));
+            AudioService.PlayAt(transform, SfxId.CatBell, SoundGroup.Voice, Mathf.Clamp01(v), pitch);
             TotalRings++;
 
             if (logRings)

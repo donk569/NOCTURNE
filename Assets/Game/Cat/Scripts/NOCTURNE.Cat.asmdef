@@ -1,7 +1,10 @@
 {
     "name": "NOCTURNE.Cat",
     "rootNamespace": "NOCTURNE.Cat",
-    "references": ["NOCTURNE.Nav"],
+    "references": [
+        "NOCTURNE.Nav",
+        "NOCTURNE.Core"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

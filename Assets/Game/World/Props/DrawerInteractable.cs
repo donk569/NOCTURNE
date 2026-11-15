@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using NOCTURNE.Interaction;
+using NOCTURNE.Core.Audio;
 
 namespace NOCTURNE
 {
@@ -102,11 +103,7 @@ namespace NOCTURNE
             if (isOpen == open) return;
             isOpen = open;
 
-            if (audioSource != null)
-            {
-                var clip = open ? openClip : closeClip;
-                if (clip != null) audioSource.PlayOneShot(clip);
-            }
+            AudioService.PlayAt(transform, SfxId.DrawerSlide, SoundGroup.Sfx, 1f, open ? 1f : 0.95f);
         }
 
         /// <summary>直接到位，跳过动画（初始化用）。</summary>

@@ -1,7 +1,8 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using NOCTURNE.Cat;
 using NOCTURNE.Opening;
+using NOCTURNE.Core.Audio;
 
 namespace NOCTURNE.Feeding
 {
@@ -387,7 +388,7 @@ namespace NOCTURNE.Feeding
         {
             if (catVoice == null || meowClip == null) return;
             catVoice.pitch = Random.Range(0.96f, 1.06f);
-            catVoice.PlayOneShot(meowClip, meowVolume);
+            AudioService.PlayAt(cat != null ? cat.transform : transform, SfxId.CatMeowHungry, SoundGroup.Voice, meowVolume);
         }
 
         IEnumerator CoMeow()
@@ -399,7 +400,7 @@ namespace NOCTURNE.Feeding
                 {
                     // 第一声略低、第二声略高，避免两次一模一样
                     catVoice.pitch = i % 2 == 0 ? 0.97f : 1.04f;
-                    catVoice.PlayOneShot(meowClip, meowVolume);
+                    AudioService.PlayAt(cat != null ? cat.transform : transform, SfxId.CatMeowHungry, SoundGroup.Voice, meowVolume);
                 }
 
                 if (i < count - 1)
@@ -422,7 +423,7 @@ namespace NOCTURNE.Feeding
             while (true)
             {
                 catVoice.pitch = Random.Range(1.15f, 1.3f);
-                catVoice.PlayOneShot(eatClip, eatVolume);
+                AudioService.PlayAt(cat != null ? cat.transform : transform, SfxId.BlanketRustle, SoundGroup.Sfx, eatVolume);
                 yield return new WaitForSeconds(Random.Range(1.1f, 2.2f));
             }
         }

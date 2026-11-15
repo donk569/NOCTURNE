@@ -2,6 +2,7 @@
 using UnityEngine;
 using NOCTURNE.Core.Flow;
 using NOCTURNE.Interaction;
+using NOCTURNE.Core.Audio;
 
 namespace NOCTURNE.Feeding
 {
@@ -248,7 +249,7 @@ namespace NOCTURNE.Feeding
 
             SetState(CatFoodBagState.Held);
 
-            if (audioSource != null && pickupClip != null) audioSource.PlayOneShot(pickupClip, 0.4f);
+            AudioService.PlayAt(transform, SfxId.BlanketRustle, SoundGroup.Sfx, 0.4f);
         }
 
         public void ReturnToTable() { ReturnToTable(false); }
@@ -295,7 +296,7 @@ namespace NOCTURNE.Feeding
             _tilt = 0f;
             SetState(CatFoodBagState.OnTable);
 
-            if (audioSource != null && putDownClip != null) audioSource.PlayOneShot(putDownClip, 0.4f);
+            AudioService.PlayAt(transform, SfxId.BlanketRustle, SoundGroup.Sfx, 0.4f);
         }
 
         // ---------------------------------------------------------------- 长按倾倒（左键）
@@ -359,7 +360,7 @@ namespace NOCTURNE.Feeding
 
             bowl.Fill();
 
-            if (audioSource != null && pourClip != null) audioSource.PlayOneShot(pourClip, 0.45f);
+            AudioService.PlayAt(transform, SfxId.KibblePour, SoundGroup.Sfx, 0.45f);
 
             float emitTime = Mathf.Max(0.2f, bowl.fillDuration);
             float t = 0f;
@@ -406,7 +407,7 @@ namespace NOCTURNE.Feeding
             // 袋口到位：盆里开始长粮，同时撒颗粒
             bowl.Fill();
 
-            if (audioSource != null && pourClip != null) audioSource.PlayOneShot(pourClip, 0.45f);
+            AudioService.PlayAt(transform, SfxId.KibblePour, SoundGroup.Sfx, 0.45f);
 
             float emitTime = Mathf.Max(0.2f, bowl.fillDuration);
             float t = 0f;
