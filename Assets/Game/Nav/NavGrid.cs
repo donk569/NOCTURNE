@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace NOCTURNE.Cat
+namespace NOCTURNE.Nav
 {
     /// <summary>
     /// 室内可行走网格（代替 NavMesh）。
+    ///
+    /// 纯 C# 类：不是 <c>MonoBehaviour</c>、不碰 <c>GameObject</c>/<c>Find*</c>，可直接 <c>new</c> 与 EditMode 单测。
+    /// 这是 <c>NOCTURNE.Nav</c> 程序集的硬约束（ARCHITECTURE §5.2 禁令 2）。
     ///
     /// 背景：本项目 <c>NavMeshSettings.m_NavMeshData</c> 为空，全工程没有任何 NavMeshAgent，
     /// 猫的移动一直是「朝远离玩家方向直线位移 + 一个矩形夹取」。矩形不认墙、不认家具、不认门，
@@ -17,9 +20,9 @@ namespace NOCTURNE.Cat
     ///   4. 生成 8 邻接图，A* 求路径，再做直线可见性平滑。
     ///
     /// 因为可行走格子被裁在 bounds 之内，随机目标点不可能落到室外（阳台在 bounds 之外）。
-    /// 门板碰撞体在烘焙时被忽略，门洞是通的；门关着这件事由 <see cref="CatDoorway"/> 在移动时把关。
+    /// 门板碰撞体在烘焙时被忽略，门洞是通的；门关着这件事由实体域（<see cref="IDoorPassage"/> 的实现者）在移动时把关。
     /// </summary>
-    public sealed class CatNavGrid
+    public sealed class NavGrid
     {
         /// <summary>网格是否可用（可用才允许猫移动）。</summary>
         public bool Ready { get; private set; }
@@ -64,10 +67,10 @@ namespace NOCTURNE.Cat
         /// <param name="radius">猫身半径</param>
         /// <param name="height">猫身高度</param>
         /// <param name="mask">墙体/家具所在层</param>
-        /// <param name="ignoreRoot">要忽略的碰撞体根（猫自己）</param>
-        /// <param name="doorways">门列表：可通行门的门板碰撞体会被忽略</param>
+        /// <param name="ignoreRoot">要忽略的碰撞体根（实体自己）</param>
+        /// <param name="doorways">门列表：可通行门的门板碰撞体会被忽略（只依赖 <see cref="IDoorPassage"/>，不认识具体门类型）</param>
         public bool Build(Vector3 center, Vector3 size, float cell, float radius, float height,
-                          LayerMask mask, Transform ignoreRoot, List<CatDoorway> doorways)
+                          LayerMask mask, Transform ignoreRoot, IReadOnlyList<IDoorPassage> doorways)
         {
             Ready = false;
             WalkableCount = 0;
@@ -169,7 +172,7 @@ namespace NOCTURNE.Cat
             for (int i = 0; i < filled.Count; i++) list.Add(filled[i]);
         }
 
-        void CollectIgnored(Transform ignoreRoot, List<CatDoorway> doorways)
+        void CollectIgnored(Transform ignoreRoot, IReadOnlyList<IDoorPassage> doorways)
         {
             _ignored.Clear();
 
@@ -183,8 +186,8 @@ namespace NOCTURNE.Cat
             for (int i = 0; i < doorways.Count; i++)
             {
                 var dw = doorways[i];
-                if (dw == null || !dw.Passable || dw.Door == null) continue;
-                Transform t = dw.Door.DoorTransform;
+                if (dw == null || !dw.Passable) continue;
+                Transform t = dw.DoorTransform;
                 if (t == null) continue;
                 var cs = t.GetComponentsInChildren<Collider>(true);
                 for (int k = 0; k < cs.Length; k++) _ignored.Add(cs[k]);

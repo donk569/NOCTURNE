@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NOCTURNE.Nav;
 using UnityEngine;
 
 namespace NOCTURNE.Cat
@@ -11,7 +12,7 @@ namespace NOCTURNE.Cat
     /// 便于在代码里精确控制时机。
     ///
     /// 位移部分（v2）：
-    /// - 不再朝「远离玩家」的方向直线硬推，而是走 <see cref="CatNavGrid"/> 的室内网格 + A*；
+    /// - 不再朝「远离玩家」的方向直线硬推，而是走 <see cref="NavGrid"/> 的室内网格 + A*；
     /// - 所有目标点都先落在室内可行走格子上，寻路失败就取消本次移动，绝不改 Transform 硬塞；
     /// - 路线要穿门时先走到合页安全半径外，调 <see cref="ICatDoor.SetOpen"/> 开门，
     ///   等 <see cref="ICatDoor.IsFullyOpen"/> 才继续（门外/窗/柜门在门脚本里已经标成"猫不能开"）；
@@ -223,7 +224,7 @@ namespace NOCTURNE.Cat
         bool _pounceFired;
 
         // 寻路
-        CatNavGrid _nav;
+        NavGrid _nav;
         readonly List<CatDoorway> _doorways = new List<CatDoorway>();
         readonly List<Vector3> _path = new List<Vector3>();
         readonly List<Vector3> _scratchPath = new List<Vector3>();
@@ -557,7 +558,7 @@ namespace NOCTURNE.Cat
         {
             CollectDoors();
 
-            if (_nav == null) _nav = new CatNavGrid();
+            if (_nav == null) _nav = new NavGrid();
 
             Vector3 center = new Vector3(boundsCenter.x, boundsCenter.y, boundsCenter.z);
             Vector3 size = new Vector3(Mathf.Abs(boundsSize.x), 0f, Mathf.Abs(boundsSize.z));

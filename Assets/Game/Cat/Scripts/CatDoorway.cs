@@ -1,3 +1,4 @@
+using NOCTURNE.Nav;
 using UnityEngine;
 
 namespace NOCTURNE.Cat
@@ -7,8 +8,11 @@ namespace NOCTURNE.Cat
     ///
     /// 只在 <see cref="Capture"/> 时读一次 Renderer 包围盒（此刻门是关着的），
     /// 之后不再依赖门板实时姿态，避免开门动画把平面算歪。
+    ///
+    /// 同时实现导航域的 <see cref="IDoorPassage"/>：烘焙网格只需要「能不能过 + 门板在哪」，
+    /// 门通行/开门动画/合页规避这些属于猫的逻辑仍留在本域，导航域不认识本类型。
     /// </summary>
-    public sealed class CatDoorway
+    public sealed class CatDoorway : IDoorPassage
     {
         public readonly ICatDoor Door;
 
@@ -38,6 +42,14 @@ namespace NOCTURNE.Cat
         /// 铰链门扫过的最大半径就是门宽，多留 0.3m 余量。
         /// </summary>
         public float SafeRadius { get { return Width + 0.3f; } }
+
+        // ---- IDoorPassage（导航域只读这两项；单一只真值仍是上面的 Passable 字段） ----
+
+        /// <summary>导航域视角的「可通行」。</summary>
+        bool IDoorPassage.Passable { get { return Passable; } }
+
+        /// <summary>导航域视角的门板 Transform；<see cref="Door"/> 为空时返回 null，烘焙会跳过这扇门。</summary>
+        Transform IDoorPassage.DoorTransform { get { return Door == null ? null : Door.DoorTransform; } }
 
         /// <summary>门板上的碰撞体（缓存，用于"这一步会不会撞到门板"的物理判定）。</summary>
         Collider[] _leafColliders;
