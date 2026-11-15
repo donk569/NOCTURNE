@@ -1,0 +1,14 @@
+{
+    "name": "NOCTURNE.Player",
+    "rootNamespace": "NOCTURNE.Player",
+    "references": ["NOCTURNE.Core", "NOCTURNE.Interaction"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
