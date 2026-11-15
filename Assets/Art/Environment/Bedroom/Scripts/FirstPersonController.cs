@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using NOCTURNE.Core.Flow;
+using NOCTURNE.Interaction;
 
 namespace NOCTURNE
 {

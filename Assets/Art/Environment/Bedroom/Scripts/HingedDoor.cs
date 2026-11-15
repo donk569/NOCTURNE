@@ -1,5 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 using NOCTURNE.Cat;
+using NOCTURNE.Interaction;
 
 namespace NOCTURNE
 {

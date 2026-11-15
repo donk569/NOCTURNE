@@ -1,4 +1,4 @@
-namespace NOCTURNE
+﻿namespace NOCTURNE.Interaction
 {
     /// <summary>
     /// 可交互物。第一人称控制器用视线射线找到它，按 E 触发。

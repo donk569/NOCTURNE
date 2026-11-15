@@ -1,0 +1,14 @@
+{
+    "name": "NOCTURNE.Interaction",
+    "rootNamespace": "NOCTURNE.Interaction",
+    "references": ["NOCTURNE.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
