@@ -190,3 +190,46 @@ _FX               (children 2)  OpeningAudio / OpeningFX
 ### 验证
 
 `MISSING=0`（1715 字段）；完整自测 51 行 `DONE`、0 警告 0 错误；`A0 黑屏 0 猫叫` + `A0b 睁眼后猫叫 1.85s`（证明 `FindDeep` 生效）；重复保存场景无差异（`git status` 干净）。
+
+---
+
+## 2026-11-15 续 4（A14 / A15：音频系统）
+
+| 任务 | 提交 | 内容 | 验证证据 |
+|---|---|---|---|
+| A14 | `feat(audio)` | `SoundGroup` / `SfxId` / `AudioService`：24 源池 + 5 分组 + 抢最远 + 懒创建常驻 | 池=24；Voice 音量读写 0.42 正确；Master=0 时播放中音源 volume=0；缺 clip 输出 `[Audio]` 警告 |
+| A15 | `feat(audio)` | `AudioCatalog`（11 条全部真实 clip）+ Editor 一键重建/校验 + **10 个播放点**接入 | 完整自测 51 行 `DONE`；A0b 猫叫 1.63s、A0 黑屏 0.00s、Y 铃铛 39 次、0 警告 0 错误 |
+
+### 两个真实 bug（都是验证阶段抓到的）
+
+**1. `AudioService.Ensure()` 找到未初始化实例，导致 `Instance` 永远为 null**
+- 现象：探针第一次跑，`AddComponent` 创建了对象但 `Awake` 没跑（编辑器下不跑），`Instance` 仍是 null；第二次跑 `FindObjectOfType` 找到这个残留对象直接返回，于是**永远初始化不了，所有播放静默丢弃**。
+- 修复：抽出 `InitializeNow()`，`Ensure()` 在两条路径上都补调它；顺带加 `Application.isPlaying` 保护 `DontDestroyOnLoad`。
+
+**2. 迁移时保留了 `if (audioSource != null)` 包裹**
+- 现象：`DrawerInteractable` / `HingedDoor` / `CatFoodBagInteractable` 里，替换成 `AudioService.PlayAt(...)` 后外层判断还在。一旦某个物体没配 `AudioSource`，声音就永远不出——**与"迁到统一服务"的目的正好相反**。
+- 修复：去掉包裹，播放入口不再依赖物体上是否挂着 AudioSource。
+
+### A15 的改造范围（超过 BACKLOG 要求的 5 个）
+
+| 类型 | 触发点 | SfxId |
+|---|---|---|
+| `CatBell` | 移动时按距离响铃（保留 pitch 抖动） | `CatBell`（Voice） |
+| `DrawerInteractable` | 开/关抽屉 | `DrawerSlide`（Sfx，开 1.0 / 关 0.95 pitch） |
+| `HingedDoor` | 开/关门 | `DoorOpen` / `DoorClose`（Sfx） |
+| `CatFeedingSequenceController` | 叫唤 ×2、进食 ×1 | `CatMeowHungry`（Voice）/ `BlanketRustle`（Sfx） |
+| `CatFoodBagInteractable` | 拾取 / 放下 / 倒粮 ×2 | `BlanketRustle` / `KibblePour`（Sfx） |
+
+合计 **10 个播放点**、**5 个类型**（BACKLOG 要求 ≥5 个播放点）。
+
+### 新增约定（写进规范）
+
+- 业务代码**禁止**再写 `AudioSource.PlayOneShot`，一律 `AudioService.Play/PlayAt`。
+- 新增音效的顺序：`SfxId` 加一项 → 跑 `NOCTURNE/音频/重建 AudioCatalog` → 看日志有没有「未映射」或「缺 clip」。
+- 当前 8 个 SfxId 没有 clip，**全是预留位**（`GhostWhisper/Step/Breath/Scream`、`UiClick/UiHover`、`Footstep`、`HeartBeat`），Phase B/C 填。
+
+### 下次开工的入口
+
+**A16：喂食解耦**（`IFoodContainer` + `PourCommitted` 事件）
+- 现状：`CatFoodBagInteractable` 与 `CatFoodBowl` 互相持有并互调。
+- 注意：`CatFoodBowl.CanInteract` 读 `CatFoodBagInteractable.Held`，`CatFoodBagInteractable` 又调 `bowl.BeginPourHold`。解耦时**先加接口 + 让碗实现，袋暂不改**，编译过再单独提交删反向引用（BACKLOG 附录 C 的建议）。
