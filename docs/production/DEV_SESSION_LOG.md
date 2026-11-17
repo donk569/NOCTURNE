@@ -287,3 +287,18 @@ NOCTURNE.Cat.Tests     CatBrainTests（15 用例，EditMode）
 A01 删掉 `Textures/Old/*` 后，`Bedroom/Materials` 下有 **13 个材质变成"引用缺失贴图的孤立材质"**
 （`PR_Wood_Chair`、`PR_Blanket`、`PR_Mat_Oak` 等）。已核实这 13 个材质**在场景里引用数均为 0**，
 纯属孤立资产，不影响渲染。可择机清理。
+
+### A20 收口（MCP 恢复后补测）
+
+Unity 重启后 MCP 通道恢复，补跑完整自测：
+
+```
+[SELFTEST] Y 铃铛：全程响 39 次（移动时才响）
+[SELFTEST] Z 控制台统计：警告 0 条，错误 0 条
+[SELFTEST] RESULT: PASS
+[SELFTEST] DONE 全流程结束
+```
+
+52 行、0 警告 0 错误。场景 `dirty=False`、工作区干净、无残留 marker。
+
+**Phase A（20 项）全部完成并通过出口闸门。**
