@@ -233,3 +233,57 @@ _FX               (children 2)  OpeningAudio / OpeningFX
 **A16：喂食解耦**（`IFoodContainer` + `PourCommitted` 事件）
 - 现状：`CatFoodBagInteractable` 与 `CatFoodBowl` 互相持有并互调。
 - 注意：`CatFoodBowl.CanInteract` 读 `CatFoodBagInteractable.Held`，`CatFoodBagInteractable` 又调 `bowl.BeginPourHold`。解耦时**先加接口 + 让碗实现，袋暂不改**，编译过再单独提交删反向引用（BACKLOG 附录 C 的建议）。
+
+---
+
+## 2026-11-17 一口气完成 A16–A20（Phase A 收官）
+
+| 任务 | 内容 | 验证 |
+|---|---|---|
+| A16 | `IFoodContainer` / `IFoodBag` / `FeedingHands` 切断袋与碗的双向依赖；碗新增 `PourCommitted` 事件 | 两侧互相引用数归 0；自测 F2/G3/H/H2/I 全通过 |
+| A17 | 18 处硬编码路径 → `EditorPaths` 常量；新增 `AssetPathValidator` | 替换后零残留；校验器 dirs=10 files=6 BAD=0 |
+| A18 | 自测输出 `RESULT: PASS/FAIL`；补 `docs/testing/SELFTEST.md`；新增 EditMode 测试运行器 | 连跑 3 次 PASS；**EditMode 单测首次执行 15/15 通过** |
+| A19 | `PerfSampler` + 性能基线 | 95.7 FPS、中位 10.02ms、P99 16.94ms、GC 2.92 KB/帧 |
+| A20 | Opening/Feeding 迁入 World，新建 UI 程序集，清空 Assembly-CSharp | **Assembly-CSharp 残留类型 = 0**；场景 MISSING=0 |
+
+### 最终程序集结构（8 个）
+
+```
+NOCTURNE.Core          Log · GameState · GameStateManager · ControlLock · Audio(SoundGroup/SfxId/AudioService/AudioCatalog) · PerfSampler
+NOCTURNE.Nav           NavGrid · IDoorPassage                     (零依赖)
+NOCTURNE.Interaction   IInteractable · IInteractPrompt
+NOCTURNE.Player        FirstPersonController · PlayerInteractor · PlayerSittingController
+NOCTURNE.World         Props(Chair/Drawer/Door/Mirror/Trigger) · Opening · Feeding(含 Debug 自测)
+NOCTURNE.UI            ChairHoldUI
+NOCTURNE.Cat           CatAgent · CatBrain · CatNavGrid→Nav · CatDoorway · CatBell …
+NOCTURNE.Cat.Tests     CatBrainTests（15 用例，EditMode）
+```
+
+`Assembly-CSharp` 里 **0 个 NOCTURNE 类型**；`Assets/Art/` 下无任何 `.cs`。
+
+### 本轮抓到的三个真问题
+
+**1. 自测里的程序集硬编码（A20 引入的回归）**
+`Type.GetType("NOCTURNE.Opening.OpeningSequenceController, Assembly-CSharp")` 在类迁到 `NOCTURNE.World` 后返回 null → `FindObjectOfType(null)` → `NullReferenceException`，自测在第 3 行就死了。
+改为编译期直接引用 + 直接读 `EyeOpened`。**教训：任何 `Type.GetType("..., 程序集名")` 都是定时炸弹。**
+
+**2. 迁移时保留 `if (audioSource != null)` 包裹（A15）**
+换成 `AudioService.PlayAt` 后外层判断还在，物体没配 AudioSource 就永远不出声。
+
+**3. `RuntimeInitializeOnLoadMethod` 在 Editor 程序集不触发（A19）**
+`PerfSampler` 一开始放在 `Assets/Game/Editor/`，marker 检测永远不执行。移到 `Core/Diag/` 才生效。同理 `CatFeedingSelfTest` 一直在 `Feeding/Debug/`（运行时代码目录）才能工作。
+
+### 未完成的验证（阻塞项）
+
+**Unity MCP 的 WebSocket 通道在 A20 验证中途断开**（Editor.log 显示 `HandleSocketClosureAsync` 反复报错），
+`execute_code` / `read_console` 全部超时，但 Unity 进程本身正常（主窗口 `NOCTURNE - SampleScene`，Responding=True，无弹窗）。
+
+- **已完成**：编译成功（`Assembly-CSharp.dll` 仅 4.6KB、`NOCTURNE.World.dll` 139KB）、
+  Assembly-CSharp 残留=0、各类归属正确、场景 MISSING=0 —— 都在断线前拿到
+- **待补**：完成 `Type.GetType` 修复后的完整自测（1 次即可），需重启 Unity 恢复 MCP 通道
+
+### 另一个发现（不影响运行）
+
+A01 删掉 `Textures/Old/*` 后，`Bedroom/Materials` 下有 **13 个材质变成"引用缺失贴图的孤立材质"**
+（`PR_Wood_Chair`、`PR_Blanket`、`PR_Mat_Oak` 等）。已核实这 13 个材质**在场景里引用数均为 0**，
+纯属孤立资产，不影响渲染。可择机清理。
