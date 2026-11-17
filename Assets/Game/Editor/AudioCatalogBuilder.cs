@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -14,7 +14,7 @@ namespace NOCTURNE.EditorTools
     /// </summary>
     public static class AudioCatalogBuilder
     {
-        const string CatalogDir = "Assets/Game/Core/Audio/Resources";
+        const string CatalogDir = EditorPaths.AudioCatalogDir;
         const string CatalogPath = CatalogDir + "/AudioCatalog.asset";
 
         // 文件名（不含扩展名）→ SfxId。找不到对应项的音效会被报告但不会中断。

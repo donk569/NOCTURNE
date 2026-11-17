@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -48,7 +48,7 @@ namespace NOCTURNE.EditorTools
             // 步幅只放大一次：已经有 Wide 剪辑就不再叠加
             try
             {
-                bool exists = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Art/Cat/AC_Cat_WalkWide.anim") != null;
+                bool exists = AssetDatabase.LoadAssetAtPath<AnimationClip>(EditorPaths.CatWalkWideAnim) != null;
                 if (exists)
                     sb.AppendLine("[walk] 已存在 AC_Cat_WalkWide.anim，跳过（避免重复放大）");
                 else

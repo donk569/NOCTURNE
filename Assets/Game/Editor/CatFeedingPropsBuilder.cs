@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEditor;
@@ -31,11 +31,11 @@ namespace NOCTURNE.EditorTools
     /// </summary>
     public static class CatFeedingPropsBuilder
     {
-        const string MeshDir = "Assets/Art/Environment/Bedroom/Meshes";
-        const string MatDir = "Assets/Art/Environment/Bedroom/Materials";
-        const string TexDir = "Assets/Art/Environment/Bedroom/Textures";
-        const string OpeningAudioDir = "Assets/Game/Opening/Audio";
-        const string FeedingAudioDir = "Assets/Game/Feeding/Audio";
+        const string MeshDir = EditorPaths.BedroomMeshDir;
+        const string MatDir = EditorPaths.BedroomMaterialDir;
+        const string TexDir = EditorPaths.BedroomTextureDir;
+        const string OpeningAudioDir = EditorPaths.OpeningAudioDir;
+        const string FeedingAudioDir = EditorPaths.FeedingAudioDir;
 
         // 茶几台面（实测 M_PR_CoffeeTable bounds：center(-0.42,0.22,-4.10) extents(0.5,0.22,0.32)）
         static readonly Vector3 BagPos = new Vector3(-0.05f, 0.44f, -3.90f);
@@ -535,11 +535,11 @@ namespace NOCTURNE.EditorTools
 
         static void EnsureFolders()
         {
-            EnsureFolder("Assets/Art/Environment/Bedroom");
+            EnsureFolder(EditorPaths.BedroomRoot);
             EnsureFolder(MeshDir);
             EnsureFolder(MatDir);
             EnsureFolder(TexDir);
-            EnsureFolder("Assets/Game/Feeding/Scripts");
+            EnsureFolder(EditorPaths.FeedingScriptDir);
             EnsureFolder(FeedingAudioDir);
         }
 

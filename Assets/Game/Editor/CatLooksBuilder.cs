@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,9 +22,9 @@ namespace NOCTURNE.EditorTools
     /// </summary>
     public static class CatLooksBuilder
     {
-        const string MeshDir = "Assets/Art/Cat/Meshes";
-        const string MatDir = "Assets/Art/Cat/Materials";
-        const string AudioDir = "Assets/Game/Cat/Audio";
+        const string MeshDir = EditorPaths.CatMeshDir;
+        const string MatDir = EditorPaths.CatMaterialDir;
+        const string AudioDir = EditorPaths.CatAudioDir;
 
         // ------------------------------------------------------------------ 命令入口
 
@@ -286,9 +286,9 @@ namespace NOCTURNE.EditorTools
 
             oc.meowClips = new AudioClip[]
             {
-                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Opening/Audio/cat_attention.mp3"),
-                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Opening/Audio/cat_hungry.mp3"),
-                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Opening/Audio/cat_sweet.mp3")
+                AssetDatabase.LoadAssetAtPath<AudioClip>(EditorPaths.SfxCatAttention),
+                AssetDatabase.LoadAssetAtPath<AudioClip>(EditorPaths.SfxCatHungry),
+                AssetDatabase.LoadAssetAtPath<AudioClip>(EditorPaths.SfxCatSweet)
             };
             int found = 0;
             for (int i = 0; i < oc.meowClips.Length; i++) if (oc.meowClips[i] != null) found++;
@@ -334,8 +334,8 @@ namespace NOCTURNE.EditorTools
         public static string BoostWalkStride(Dictionary<string, string> args)
         {
             float factor = Arg(args, "factor", 1.45f);
-            string fbx = "Assets/Art/Cat/Cat_All.fbx";
-            string savePath = "Assets/Art/Cat/AC_Cat_WalkWide.anim";
+            string fbx = EditorPaths.CatModelFbx;
+            string savePath = EditorPaths.CatWalkWideAnim;
 
             var assets = AssetDatabase.LoadAllAssetsAtPath(fbx);
             AnimationClip src = null;
@@ -427,7 +427,7 @@ namespace NOCTURNE.EditorTools
             AssetDatabase.SaveAssets();
 
             // ---- 换到状态机上
-            var ac = AssetDatabase.LoadAssetAtPath<UnityEditor.Animations.AnimatorController>("Assets/Art/Cat/AC_Cat.controller");
+            var ac = AssetDatabase.LoadAssetAtPath<UnityEditor.Animations.AnimatorController>(EditorPaths.CatAnimatorController);
             string swapped = "控制器没换";
             if (ac != null)
             {
