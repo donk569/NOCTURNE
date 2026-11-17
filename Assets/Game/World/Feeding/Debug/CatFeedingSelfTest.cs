@@ -116,7 +116,7 @@ namespace NOCTURNE.DebugTools
                 var catAudio = cat.GetComponentsInChildren<AudioSource>(true);
                 var voiceGo = FindDeep("CatVoice");
                 var voiceSrc = voiceGo != null ? voiceGo.GetComponent<AudioSource>() : null;
-                var openingSeq = UnityEngine.Object.FindObjectOfType(System.Type.GetType("NOCTURNE.Opening.OpeningSequenceController, Assembly-CSharp")) as MonoBehaviour;
+                var openingSeq = UnityEngine.Object.FindObjectOfType<NOCTURNE.Opening.OpeningSequenceController>();
                 var overlayGo = FindDeep("BlackOverlay");
                 var overlayImg = overlayGo != null ? overlayGo.GetComponent<UnityEngine.UI.Image>() : null;
 
@@ -138,7 +138,7 @@ namespace NOCTURNE.DebugTools
                     t += Time.unscaledDeltaTime;
                     // 「黑屏」的判定用开场流程自己的标志位：睁眼之前一律算黑屏。
                     // 只看 alpha 会被缓动曲线骗 —— 淡出前 30% 的 alpha 仍然接近 1。
-                    bool black = openingSeq == null || !(bool)openingSeq.GetType().GetProperty("EyeOpened").GetValue(openingSeq, null);
+                    bool black = openingSeq == null || !openingSeq.EyeOpened;
                     if (black)
                     {
                         for (int i = 0; i < catAudio.Length; i++)

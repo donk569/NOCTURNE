@@ -1,7 +1,15 @@
 {
     "name": "NOCTURNE.World",
     "rootNamespace": "NOCTURNE.World",
-    "references": ["NOCTURNE.Core", "NOCTURNE.Interaction", "NOCTURNE.Player", "NOCTURNE.Cat"],
+    "references": [
+        "NOCTURNE.Core",
+        "NOCTURNE.Interaction",
+        "NOCTURNE.Player",
+        "NOCTURNE.Cat",
+        "Unity.TextMeshPro",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

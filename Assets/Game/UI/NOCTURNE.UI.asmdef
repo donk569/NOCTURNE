@@ -1,0 +1,14 @@
+{
+    "name": "NOCTURNE.UI",
+    "rootNamespace": "NOCTURNE.UI",
+    "references": ["NOCTURNE.Core", "NOCTURNE.Interaction", "NOCTURNE.World", "NOCTURNE.Player", "Unity.TextMeshPro"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
