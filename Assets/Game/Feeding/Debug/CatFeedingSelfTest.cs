@@ -558,6 +558,11 @@ namespace NOCTURNE.DebugTools
                 Log(string.Format("Z 控制台统计：警告 {0} 条，错误 {1} 条", _warnCount, _errCount));
                 if (_problems.Length > 0) Log("Z2 问题清单：\n" + _problems.ToString().TrimEnd());
 
+                // 机读结论行：外部脚本/CI 只需要 grep 这一行，不必解析全文
+                if (_errCount > 0) Log("RESULT: FAIL(" + _errCount + " errors)");
+                else if (_warnCount > 0) Log("RESULT: PASS_WITH_WARNINGS(" + _warnCount + ")");
+                else Log("RESULT: PASS");
+
                 Log("DONE 全流程结束");
                 Time.timeScale = 1f;
             }
