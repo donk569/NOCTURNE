@@ -19,7 +19,7 @@ namespace NOCTURNE.Feeding
     /// 看向饭盆时 E 会走"倒入猫粮"，看向门时 E 会开门，都不会误触发放下。
     /// </summary>
     [DisallowMultipleComponent]
-    public class CatFoodBagInteractable : MonoBehaviour, IInteractable
+    public class CatFoodBagInteractable : MonoBehaviour, IInteractable, IFoodBag
     {
         [Header("引用")]
         [Tooltip("手持点（Player/CameraRig/HoldPoint）")]
@@ -78,7 +78,17 @@ namespace NOCTURNE.Feeding
         [SerializeField] CatFoodBagState _state = CatFoodBagState.OnTable;
 
         /// <summary>当前被拿在手上的袋子（全局只允许一个）。</summary>
-        public static CatFoodBagInteractable Held { get; private set; }
+        public static IFoodBag Held
+        {
+            get { return FeedingHands.Held; }
+            private set { FeedingHands.Held = value; }
+        }
+
+        /// <summary>是否在手上（接口）。</summary>
+        public bool IsHeld { get { return _state == CatFoodBagState.Held; } }
+
+        /// <summary>是否正在倒粮（接口）。</summary>
+        public bool IsPouring { get { return _state == CatFoodBagState.Pouring; } }
 
         public CatFoodBagState State { get { return _state; } }
 
@@ -91,7 +101,7 @@ namespace NOCTURNE.Feeding
         bool _returning;
         float _tilt;
         float _tiltTarget;
-        CatFoodBowl _pouringBowl;
+        IFoodContainer _pouringBowl;
         Coroutine _pourRoutine;
         FirstPersonController _fpc;
 
@@ -120,13 +130,13 @@ namespace NOCTURNE.Feeding
 
         void OnDisable()
         {
-            if (Held == this) Held = null;
+            if (ReferenceEquals(Held, this)) Held = null;
             ControlLock.Release(ControlLock.Reason.Pouring, this);
         }
 
         void OnDestroy()
         {
-            if (Held == this) Held = null;
+            if (ReferenceEquals(Held, this)) Held = null;
         }
 
         void Update()
@@ -194,11 +204,11 @@ namespace NOCTURNE.Feeding
             Vector3 targetPos = holdPoint.position;
             Quaternion targetRot = holdPoint.rotation * Quaternion.Euler(holdLocalEuler);
 
-            if (_tilt > 0.01f && _pouringBowl != null && _pouringBowl.pourAnchor != null)
+            if (_tilt > 0.01f && _pouringBowl != null && _pouringBowl.PourAnchor != null)
             {
                 // 倒粮时把袋子往前下方送，袋口对准盆口上方
                 targetPos = holdPoint.TransformPoint(pourLocalOffset);
-                Vector3 toBowl = _pouringBowl.pourAnchor.position - targetPos;
+                Vector3 toBowl = _pouringBowl.PourAnchor.position - targetPos;
                 if (toBowl.sqrMagnitude > 0.0004f)
                 {
                     Quaternion face = Quaternion.LookRotation(toBowl.normalized, Vector3.up);
@@ -236,7 +246,7 @@ namespace NOCTURNE.Feeding
         public void PickUp()
         {
             if (_state != CatFoodBagState.OnTable) return;
-            if (Held != null && Held != this) return;    // 同时只能拿一袋
+            if (Held != null && !ReferenceEquals(Held, this)) return;    // 同时只能拿一袋
 
             Held = this;
             _returning = false;
@@ -290,7 +300,7 @@ namespace NOCTURNE.Feeding
             transform.localScale = _tableScale;
 
             if (_collider != null) _collider.enabled = true;
-            if (Held == this) Held = null;
+            if (ReferenceEquals(Held, this)) Held = null;
 
             _returning = false;
             _tilt = 0f;
@@ -308,7 +318,7 @@ namespace NOCTURNE.Feeding
         /// 按住鼠标左键的瞬间调用：进入"预备倾倒"，袋子开始跟着长按进度倾斜。
         /// 注意这里故意不锁交互 —— 玩家随时可以松手取消。
         /// </summary>
-        public bool BeginPourHold(CatFoodBowl bowl)
+        public bool BeginPourHold(IFoodContainer bowl)
         {
             if (_state != CatFoodBagState.Held || bowl == null) return false;
             if (!bowl.CanAcceptFood) return false;
@@ -339,14 +349,14 @@ namespace NOCTURNE.Feeding
         }
 
         /// <summary>长按达标：此时袋子通常已经倾到位，直接开始撒粮。</summary>
-        public void CommitPour(CatFoodBowl bowl)
+        public void CommitPour(IFoodContainer bowl)
         {
             if (_state != CatFoodBagState.Pouring || bowl == null) return;
             if (_pourRoutine != null) return;
             _pourRoutine = StartCoroutine(CommitRoutine(bowl));
         }
 
-        IEnumerator CommitRoutine(CatFoodBowl bowl)
+        IEnumerator CommitRoutine(IFoodContainer bowl)
         {
             _pouringBowl = bowl;
             ControlLock.Acquire(ControlLock.Reason.Pouring, this);
@@ -362,7 +372,7 @@ namespace NOCTURNE.Feeding
 
             AudioService.PlayAt(transform, SfxId.KibblePour, SoundGroup.Sfx, 0.45f);
 
-            float emitTime = Mathf.Max(0.2f, bowl.fillDuration);
+            float emitTime = Mathf.Max(0.2f, bowl.FillDuration);
             float t = 0f;
             while (t < emitTime)
             {
@@ -384,7 +394,7 @@ namespace NOCTURNE.Feeding
         // ---------------------------------------------------------------- 倒粮（旧接口，剧情/自测直调）
 
         /// <summary>由饭盆（或剧情）调用：倾斜 → 撒颗粒 → 盆里长粮 → 回正。</summary>
-        public void Pour(CatFoodBowl bowl)
+        public void Pour(IFoodContainer bowl)
         {
             if (_state != CatFoodBagState.Held || bowl == null) return;
             if (!bowl.CanAcceptFood) return;
@@ -393,7 +403,7 @@ namespace NOCTURNE.Feeding
             _pourRoutine = StartCoroutine(PourRoutine(bowl));
         }
 
-        IEnumerator PourRoutine(CatFoodBowl bowl)
+        IEnumerator PourRoutine(IFoodContainer bowl)
         {
             SetState(CatFoodBagState.Pouring);
             _pouringBowl = bowl;
@@ -409,7 +419,7 @@ namespace NOCTURNE.Feeding
 
             AudioService.PlayAt(transform, SfxId.KibblePour, SoundGroup.Sfx, 0.45f);
 
-            float emitTime = Mathf.Max(0.2f, bowl.fillDuration);
+            float emitTime = Mathf.Max(0.2f, bowl.FillDuration);
             float t = 0f;
             while (t < emitTime)
             {

@@ -23,7 +23,7 @@ namespace NOCTURNE.Feeding
     /// 倒粮交互也挂在这里：玩家拿着猫粮袋看向饭盆时，本物体就是可交互目标。
     /// </summary>
     [DisallowMultipleComponent]
-    public class CatFoodBowl : MonoBehaviour, IInteractable, IInteractPrompt
+    public class CatFoodBowl : MonoBehaviour, IInteractable, IInteractPrompt, IFoodContainer
     {
         [Header("食物视觉")]
         [Tooltip("食物根节点（CatFood）。空盆时整体隐藏")]
@@ -54,6 +54,18 @@ namespace NOCTURNE.Feeding
         [Header("节奏")]
         [Tooltip("猫粮从无到满的时长（秒），与倒粮动作对齐")]
         public float fillDuration = 1.7f;
+
+        /// <summary>接口实现：袋子据此排布撒粮粒子。</summary>
+        float IFoodContainer.FillDuration { get { return fillDuration; } }
+
+        /// <summary>接口实现：袋口要对准的位置。</summary>
+        Transform IFoodContainer.PourAnchor { get { return pourAnchor; } }
+
+        /// <summary>
+        /// 倒粮真正落进碗里时触发。参数：容器、倒入量。
+        /// 留给后续「喂食完成」「成就/记录」等系统订阅，避免再往碗里加直接引用。
+        /// </summary>
+        public event System.Action<IFoodContainer, float> PourCommitted;
 
         [Tooltip("猫把一盆吃完的时长（秒）")]
         public float eatDuration = 10f;
@@ -164,10 +176,15 @@ namespace NOCTURNE.Feeding
         /// <summary>倒粮：食物从无到有。已在 Filled 或 Eating 时忽略。</summary>
         public void Fill()
         {
+            FillInternal(1f);
+        }
+
+        void FillInternal(float amount)
+        {
             if (!CanAcceptFood) return;
 
             StopRoutine();
-            _routine = StartCoroutine(FillRoutine());
+            _routine = StartCoroutine(FillRoutine(amount));
         }
 
         /// <summary>猫开始进食：返回 false 表示盆里没有食物。</summary>
@@ -196,7 +213,7 @@ namespace NOCTURNE.Feeding
             _routine = null;
         }
 
-        IEnumerator FillRoutine()
+        IEnumerator FillRoutine(float amount)
         {
             if (audioSource != null && fillClip != null) audioSource.PlayOneShot(fillClip, 0.35f);
 
@@ -214,6 +231,8 @@ namespace NOCTURNE.Feeding
 
             // 逻辑到 Filled 的同时画面已经满了 —— 猫这时候才会出发
             SetState(CatFoodBowlState.Filled);
+
+            if (PourCommitted != null) PourCommitted(this, amount);
         }
 
         IEnumerator EatRoutine(float duration)
@@ -288,8 +307,8 @@ namespace NOCTURNE.Feeding
         {
             get
             {
-                var bag = CatFoodBagInteractable.Held;
-                return bag != null && bag.State == CatFoodBagState.Held && CanAcceptFood;
+                IFoodBag bag = FeedingHands.Held;
+                return bag != null && bag.IsHeld && CanAcceptFood;
             }
         }
 
@@ -322,10 +341,10 @@ namespace NOCTURNE.Feeding
         /// </summary>
         void TickPourHold(bool pressed, float dt)
         {
-            var bag = CatFoodBagInteractable.Held;
+            IFoodBag bag = FeedingHands.Held;
 
             bool ready = bag != null
-                         && (bag.State == CatFoodBagState.Held || bag.State == CatFoodBagState.Pouring)
+                         && (bag.IsHeld || bag.IsPouring)
                          && CanAcceptFood
                          && PlayerInRange();
 
@@ -361,7 +380,7 @@ namespace NOCTURNE.Feeding
             }
         }
 
-        void ReleaseHold(CatFoodBagInteractable bag)
+        void ReleaseHold(IFoodBag bag)
         {
             if (_holding && bag != null) bag.CancelPourHold();
             _holding = false;
